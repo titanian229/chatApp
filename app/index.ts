@@ -19,15 +19,24 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(server, {
+const ioServerConfig = {
   cors: {
     origin: process.env.NODE_ENV === "DEV" ? process.env.CLIENT_ADDRESS : undefined,
+    methods: ["GET", "POST"],
   },
-});
+  path: "/ws",
+};
 
-// app.get('/', (req, res) => {
-//   res.sendFile(__dirname + '/index.html');
-// });
+console.log(ioServerConfig);
+const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
+  server,
+  ioServerConfig
+);
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+  // res.sendFile(__dirname + '/index.html');
+});
 
 const connectedUserData: connectedUserData = {};
 
@@ -49,6 +58,8 @@ io.on("connection", (socket) => {
       connectedTime: Date.now(),
       connected: true,
     };
+
+    callback(1);
   });
 
   socket.on("getConnectedUsers", () => {
