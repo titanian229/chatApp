@@ -45,7 +45,7 @@ export interface initializationResponse {
 export interface ClientToServerEvents {
   initialize: (clientID: uuidType, callback: (initializationResponse: initializationResponse) => void) => void;
   getConnectedUsers: (callback: (e: number) => void) => void;
-  message: (message: messageEvent) => void;
+  message: (message: string) => void;
 }
 
 export interface InterServerEvents {

@@ -9,15 +9,16 @@ import "@fontsource/roboto/700.css";
 import Root from "./routes/Root";
 import Home from "./routes/Home";
 import ErrorPage from "./ErrorPage";
+import "./index.css";
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: "/chat",
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "/",
+        path: "/chat",
         element: <Home />,
       },
     ],

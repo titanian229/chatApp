@@ -36,10 +36,13 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
   ioServerConfig
 );
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-  // res.sendFile(__dirname + '/index.html');
-});
+// app.get("/", (req, res) => {
+//   res.send("Hello World!");
+//   // res.sendFile(__dirname + '/index.html');
+// });
+
+app.use(express.static(path.join(__dirname, "../client/dist")));
+app.get("*", (req, res) => res.sendFile("index.html", { root: path.join(__dirname, "../client/dist") }));
 
 const connectedUserData: connectedUserData = {};
 
@@ -83,9 +86,12 @@ io.on("connection", (socket) => {
     socket.emit("connectedUsers", connectedUserData);
   });
 
-  socket.on("message", (message: messageEvent) => {
-    messages.push(message);
-    io.emit("message", message);
+  socket.on("message", (message: string) => {
+    const id = socket.data.id;
+    if (!id) return;
+    const messageData = { message, sender: { id }, sendTime: Date.now() };
+    messages.push(messageData);
+    io.emit("message", messageData);
   });
 
   socket.on("disconnect", () => {

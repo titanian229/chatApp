@@ -9,6 +9,7 @@ interface websocketContextState {
   isConnected: boolean;
   numberConnectedUsers: number;
   myIcon?: string;
+  userID?: string;
 }
 
 const defaultState: websocketContextState = {
@@ -46,13 +47,15 @@ export default function WebSocketProvider({ children }: { children: React.ReactN
       //   localStorage.setItem("clientID", clientID);
       // }
 
-      socket.emit("initialize", uuidv4(), ({ myIcon, connectedUserNumber, connectedUsers }) => {
+      const userID = uuidv4();
+
+      socket.emit("initialize", userID, ({ myIcon, connectedUserNumber, connectedUsers }) => {
         setIsConnected((state) => ({
           ...state,
           numberConnectedUsers: connectedUserNumber,
           myIcon: myIcon,
+          userID,
         }));
-        console.log({ connectedUsers });
         setConnectedUsers(
           connectedUsers.reduce((prev: userContextState, curr: newUser) => {
             prev[curr.id] = { icon: curr.icon };
