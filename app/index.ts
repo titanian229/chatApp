@@ -3,7 +3,6 @@ import http from "http";
 import express from "express";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
-import crypto from "crypto";
 
 import {
   uuidType,
@@ -12,7 +11,11 @@ import {
   ServerToClientEvents,
   InterServerEvents,
   SocketData,
-} from "./types";
+  initializationResponse,
+  newUser,
+  messageEvent,
+} from "../types";
+import getRandomAvatar from "./getRandomAvatar";
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
@@ -40,37 +43,58 @@ app.get("/", (req, res) => {
 
 const connectedUserData: connectedUserData = {};
 
+const messages: messageEvent[] = [];
+
 io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
 
-  socket.on("initialize", (clientID, callback) => {
+  socket.on("initialize", async (clientID, callback) => {
     console.log("Init connection", clientID);
     socket.data.id = clientID;
 
     if (connectedUserData[clientID]) {
       connectedUserData[clientID].connected = true;
       connectedUserData[clientID].socketID = socket.id;
-      return;
+    } else {
+      // Create user's icon
+      const svg = await getRandomAvatar(clientID);
+
+      connectedUserData[clientID] = {
+        socketID: socket.id,
+        connectedTime: Date.now(),
+        connected: true,
+        icon: svg,
+      };
     }
 
-    connectedUserData[clientID] = {
-      socketID: socket.id,
-      connectedTime: Date.now(),
-      connected: true,
-    };
+    // Emit the new connected user to all clients
+    socket.broadcast.emit("newUser", { id: clientID, icon: connectedUserData[clientID].icon });
 
-    callback(1);
+    callback({
+      connectedUserNumber: Object.keys(connectedUserData)
+        .map((key) => connectedUserData[key])
+        .filter((user) => user.connected === true).length,
+      connectedUsers: Object.keys(connectedUserData).map((key) => ({ id: key, icon: connectedUserData[key].icon })),
+      myIcon: connectedUserData[clientID].icon,
+    });
   });
 
   socket.on("getConnectedUsers", () => {
     socket.emit("connectedUsers", connectedUserData);
   });
 
+  socket.on("message", (message: messageEvent) => {
+    messages.push(message);
+    io.emit("message", message);
+  });
+
   socket.on("disconnect", () => {
     console.log("user disconnected");
     if (socket.data.id) {
-      connectedUserData[socket.data.id].connected = false;
-      delete connectedUserData[socket.data.id].socketID;
+      // connectedUserData[socket.data.id].connected = false;
+      // delete connectedUserData[socket.data.id].socketID;
+      delete connectedUserData[socket.data.id];
+      socket.broadcast.emit("disconnectedUser", socket.data.id);
     }
   });
 });
